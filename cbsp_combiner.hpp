@@ -12,6 +12,7 @@
 
 #include "cbsp_structor.hpp"
 #include "cbsp_error.hpp"
+#include "cbsp_file.hpp"
 #include "cbsp_utils.hpp"
 #include "cbsp_tree.hpp"
 #include "cbsp_crc.hpp"
@@ -152,18 +153,24 @@ namespace cbsp
 
             // cp source to target
             uint32_t crc = 0x0;
+            std::fseek(fp, offset, SEEK_SET);
             {
-                std::fseek(fp, offset, SEEK_SET);
                 const static uint64_t batch_size = 10485760; // 10 × 1024 × 1024
-                auto buffer = std::make_unique<char[]>(batch_size);
-                while (!std::feof(file))
+                ChunkFile chunkfile(file, batch_size);
+
+                for (auto it = chunkfile.begin(); it != chunkfile.end(); it++)
                 {
-                    auto gcount = std::fread(buffer.get(), sizeof(char), batch_size, file);
-                    write(fp, buffer.get(), gcount);
-                    crc = crc32(reinterpret_cast<uint8_t *>(buffer.get()), gcount, crc);
+                    auto &chunk = *it;
+                    if (chunk.empty())
+                    {
+                        std::fclose(file);
+                        return CBSP_ERR_NO_SOURCE;
+                    }
+                    write(fp, chunk.data(), chunk.size());
+                    crc = crc32(reinterpret_cast<uint8_t *>(chunk.data()), chunk.size(), crc);
                 }
-                std::fclose(file);
             }
+            std::fclose(file);
 
             // set blocker header
             blocker.crc = crc;

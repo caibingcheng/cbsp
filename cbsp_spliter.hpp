@@ -32,7 +32,6 @@ namespace cbsp
 
             std::fseek(fp, blocker.offset, SEEK_SET);
             const static uint64_t batch_size = 10485760;
-            auto buffer = std::make_unique<char[]>(batch_size);
             uint64_t length = blocker.length;
 
             uint32_t crc = crcBlocker(fp, blocker);
@@ -46,18 +45,12 @@ namespace cbsp
             {
                 return CBSP_ERR_NO_TARGET;
             }
-            length = blocker.length;
-            std::fseek(fp, blocker.offset, SEEK_SET);
-            while (length > batch_size)
+
+            ChunkFile chunkfile(fp, batch_size, blocker.offset, blocker.length);
+            for (auto it = chunkfile.begin(); it != chunkfile.end(); it++)
             {
-                auto gcount = std::fread(buffer.get(), sizeof(char), batch_size, fp);
-                write(file, buffer.get(), gcount);
-                length -= batch_size;
-            }
-            if (length > 0)
-            {
-                auto gcount = std::fread(buffer.get(), sizeof(char), length, fp);
-                write(file, buffer.get(), gcount);
+                auto &chunk = *it;
+                write(file, chunk.data(), chunk.size());
             }
 
             std::fclose(file);
