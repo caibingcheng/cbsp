@@ -61,7 +61,6 @@ namespace cbsp
         std::string::size_type pos = 0;
         do
         {
-            pos += 1;
             auto ppos = pos;
             pos = dirpath.find_first_of('/', ppos);
 
@@ -75,6 +74,7 @@ namespace cbsp
             {
                 dlist.push_back(tdir);
             }
+            pos += 1;
         } while (pos < dirpath.size());
 
         return dlist;

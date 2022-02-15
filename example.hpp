@@ -41,7 +41,7 @@ namespace cbsp
         }
         return ret;
     }
-    inline int split(const char *target)
+    inline int split(const char *target, const char *outdir = nullptr)
     {
         int ret = CBSP_ERR_SUCCESS;
         CBSPFile fp;
@@ -52,7 +52,7 @@ namespace cbsp
             return ret;
         }
 
-        ret = spliter::extract(&fp);
+        ret = spliter::extract(&fp, outdir);
         if (ret != CBSP_ERR_SUCCESS)
         {
             printError(ret);

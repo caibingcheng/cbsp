@@ -21,7 +21,7 @@ int main(int argc, char **argv)
     auto split = [&argc, &argv](int start)
     {
         char *target = argv[start];
-        cbsp::split(target);
+        cbsp::split(target, (argc > 3) ? argv[3] : "");
     };
 
     auto print = [&argc, &argv](int start)

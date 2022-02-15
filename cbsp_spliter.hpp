@@ -59,7 +59,7 @@ namespace cbsp
             return CBSP_ERR_SUCCESS;
         }
 
-        inline int extract(std::FILE *&fp)
+        inline int extract(std::FILE *&fp, const char *outdir = nullptr)
         {
             if (!fp)
             {
@@ -76,9 +76,31 @@ namespace cbsp
                 return CBSP_ERR_BAD_CBSP;
             }
 
+            auto hasout = [&outdir]() -> bool
+            { return !std::string(outdir).empty(); };
+
             auto tr = dirTree(fp);
             tr = cropTree(tr);
+            auto old_tr = tr;
+
+            if (hasout())
+            {
+                auto dirs = listDirs(outdir);
+                while (!dirs.empty())
+                {
+                    auto dir = dirs.back();
+                    dirs.pop_back();
+                    CBSP_TREE _tr;
+                    _tr.push_back({.isFile = false,
+                                   .path = dir,
+                                   .children = tr});
+                    tr = _tr;
+                }
+            }
+
             conTree(tr);
+            cbsp_assert(!tr.empty());
+            tr = old_tr;
             cbsp_assert(!tr.empty());
 
             auto header = getHeader(fp);
@@ -93,6 +115,10 @@ namespace cbsp
                 auto filename = getFileName(fp, blocker);
                 auto filedir = getFileDir(fp, blocker);
                 auto rpath = matchTree(tr, (filedir + "/" + filename).c_str());
+                if (hasout())
+                {
+                    rpath = std::string(outdir) + "/" + rpath;
+                }
                 cbsp_assert(!rpath.empty());
 
                 int ret = genFile(fp, rpath.c_str(), blocker);
