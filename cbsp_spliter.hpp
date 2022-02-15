@@ -85,7 +85,7 @@ namespace cbsp
 
             if (hasout())
             {
-                auto dirs = listDirs(outdir);
+                auto dirs = listDirs(rpath(outdir));
                 while (!dirs.empty())
                 {
                     auto dir = dirs.back();
@@ -97,8 +97,7 @@ namespace cbsp
                     tr = _tr;
                 }
             }
-
-            conTree(tr);
+            conTree(tr, hasout());
             cbsp_assert(!tr.empty());
             tr = old_tr;
             cbsp_assert(!tr.empty());

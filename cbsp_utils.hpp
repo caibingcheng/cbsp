@@ -5,6 +5,8 @@
 #include <memory>
 #include <cstring>
 #include <cstdio>
+#include <cstdlib>
+#include <sys/param.h>
 
 #ifdef _WIN32_WINNT
 #include <io.h>
@@ -273,6 +275,13 @@ namespace cbsp
         std::fseek(fp, _offset, SEEK_SET);
 
         return lenght;
+    }
+
+    inline char *rpath(const char *path)
+    {
+        static char filepath[PATH_MAX];
+        realpath(path, filepath);
+        return filepath;
     }
 }
 

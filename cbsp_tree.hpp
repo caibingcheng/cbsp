@@ -185,9 +185,9 @@ namespace cbsp
             conTreeRe(tr.children, path + "/" + tr.path);
         }
     }
-    inline void conTree(const CBSP_TREE &tree)
+    inline void conTree(const CBSP_TREE &tree, const bool &root = false)
     {
-        std::string path(".");
+        std::string path(root ? "/" : ".");
         for (auto &tr : tree)
         {
             if (!tr.isFile)
@@ -246,8 +246,8 @@ namespace cbsp
                     if (newpath)
                     {
                         ptree->push_back({.isFile = isFile,
-                                        .path = dl,
-                                        .children = {}});
+                                          .path = dl,
+                                          .children = {}});
                         ptree = &(ptree->back().children);
                     }
                 }
