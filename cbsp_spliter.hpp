@@ -150,7 +150,6 @@ namespace cbsp
 
             auto tr = dirTree(fp);
             tr = cropTree(tr);
-            conTree(tr);
             cbsp_assert(!tr.empty());
 
             auto header = getHeader(fp);

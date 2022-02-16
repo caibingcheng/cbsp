@@ -161,6 +161,7 @@ namespace cbsp
                 for (auto it = chunkfile.begin(); it != chunkfile.end(); it++)
                 {
                     auto &chunk = *it;
+                    cbsp_assert(!chunk.empty());
                     if (chunk.empty())
                     {
                         std::fclose(file);
