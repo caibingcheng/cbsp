@@ -280,6 +280,7 @@ namespace cbsp
     inline char *rpath(const char *path)
     {
         static char filepath[PATH_MAX];
+        memset(filepath, 0, PATH_MAX);
         realpath(path, filepath);
         return filepath;
     }

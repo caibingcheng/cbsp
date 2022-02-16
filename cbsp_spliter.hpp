@@ -77,13 +77,13 @@ namespace cbsp
             }
 
             auto hasout = [&outdir]() -> bool
-            { return !std::string(outdir).empty(); };
+            { return !std::string(outdir).empty(); }();
 
             auto tr = dirTree(fp);
             tr = cropTree(tr);
             auto old_tr = tr;
 
-            if (hasout())
+            if (hasout)
             {
                 auto dirs = listDirs(rpath(outdir));
                 while (!dirs.empty())
@@ -97,7 +97,7 @@ namespace cbsp
                     tr = _tr;
                 }
             }
-            conTree(tr, hasout());
+            conTree(tr, hasout);
             cbsp_assert(!tr.empty());
             tr = old_tr;
             cbsp_assert(!tr.empty());
@@ -114,7 +114,7 @@ namespace cbsp
                 auto filename = getFileName(fp, blocker);
                 auto filedir = getFileDir(fp, blocker);
                 auto rpath = matchTree(tr, (filedir + "/" + filename).c_str());
-                if (hasout())
+                if (hasout)
                 {
                     rpath = std::string(outdir) + "/" + rpath;
                 }

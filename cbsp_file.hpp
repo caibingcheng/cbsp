@@ -197,10 +197,16 @@ namespace cbsp
     public:
         CBSPFile() = default;
         CBSPFile(const char *filename) { open(filename); }
+        CBSPFile(std::FILE *&file) : m_file(file),
+                                     m_status(check()) {}
         virtual ~CBSPFile() { close(); }
 
         std::FILE *&operator&() { return m_file; }
-        operator bool() const { return m_file != nullptr; }
+        operator bool() const
+        {
+            return m_file != nullptr &&
+                   m_status == CBSP_ERR_SUCCESS;
+        }
 
         void close()
         {
@@ -211,22 +217,24 @@ namespace cbsp
             }
         }
 
+        int open(std::FILE *&file)
+        {
+            close();
+            m_file = file;
+            m_status = check();
+
+            return m_status;
+        }
         // just open a cbsp file for read
         int open(const char *filename)
         {
             close();
             m_file = std::fopen(filename, "rb");
-            if (!m_file)
-            {
-                return CBSP_ERR_NO_TARGET;
-            }
-            if (!isCBSP(m_file))
-            {
-                close();
-                return CBSP_ERR_NO_CBSP;
-            }
-            return CBSP_ERR_SUCCESS;
+
+            m_status = check();
+            return m_status;
         }
+
         // open a cbsp file for read and write
         // create if not exist
         int create(const char *filename)
@@ -246,8 +254,8 @@ namespace cbsp
             {
                 return CBSP_ERR_NO_TARGET;
             }
-            uint64_t length = fileLenght(m_file);
 
+            uint64_t length = fileLenght(m_file);
             // file is empty
             if (length <= 0)
             {
@@ -256,6 +264,18 @@ namespace cbsp
                 setHeader(m_file, header);
             }
 
+            m_status = check();
+            return m_status;
+        }
+
+        int check()
+        {
+            if (!m_file)
+            {
+                return CBSP_ERR_NO_TARGET;
+            }
+
+            uint64_t length = fileLenght(m_file);
             // file not empty, and not cbsp
             if (length > 0 && !isCBSP(m_file))
             {
@@ -273,7 +293,9 @@ namespace cbsp
         }
 
     private:
+        // keep m_file first
         std::FILE *m_file = nullptr;
+        int m_status = CBSP_ERR_SUCCESS;
 
         CBSPFile(const CBSPFile &) = delete;
         CBSPFile(CBSPFile &&) = delete;
