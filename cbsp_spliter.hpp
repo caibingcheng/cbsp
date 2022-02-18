@@ -76,6 +76,7 @@ namespace cbsp
                 return CBSP_ERR_BAD_CBSP;
             }
 
+            int result = CBSP_ERR_SUCCESS;
             auto hasout = [&outdir]() -> bool
             { return !std::string(outdir).empty(); }();
 
@@ -97,15 +98,19 @@ namespace cbsp
                     tr = _tr;
                 }
             }
-            conTree(tr, hasout);
+            result = conTree(tr, hasout);
             cbsp_assert(!tr.empty());
+            if (result != CBSP_ERR_SUCCESS)
+            {
+                return result;
+            }
+
             tr = old_tr;
             cbsp_assert(!tr.empty());
 
             auto header = getHeader(fp);
             auto blocker = getFirst(fp, header);
             auto count = header.count;
-            int result = CBSP_ERR_SUCCESS;
             while (count-- > 0)
             {
                 if (!isCBSP(blocker))

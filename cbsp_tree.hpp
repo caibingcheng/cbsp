@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <sys/stat.h>
 #include <sys/param.h>
 
 #include "cbsp_structor.hpp"
@@ -176,25 +177,50 @@ namespace cbsp
         return cropTree(tree.front().children);
     }
 
-    inline void conTreeRe(const CBSP_TREE &tree, std::string path)
+    inline int conTreeRe(const CBSP_TREE &tree, std::string path)
     {
         if (!tree.empty())
+        {
+            struct stat sts;
+            bool is_file = false;
+            if (0 == stat(path.c_str(), &sts))
+            {
+                is_file = !(sts.st_mode & __S_IFDIR);
+            }
+            if (is_file)
+            {
+                ErrorMessage::setMessage("Target %s is not a directory", path.c_str());
+                return CBSP_ERR_AL_EXIST;
+            }
             system(std::string("mkdir -p " + path).c_str());
+        }
+        int result = CBSP_ERR_SUCCESS;
         for (auto &tr : tree)
         {
-            conTreeRe(tr.children, path + "/" + tr.path);
+            result = conTreeRe(tr.children, path + "/" + tr.path);
+            if (result != CBSP_ERR_SUCCESS)
+            {
+                return result;
+            }
         }
+        return CBSP_ERR_SUCCESS;
     }
-    inline void conTree(const CBSP_TREE &tree, const bool &root = false)
+    inline int conTree(const CBSP_TREE &tree, const bool &root = false)
     {
+        int result = CBSP_ERR_SUCCESS;
         std::string path(root ? "/" : ".");
         for (auto &tr : tree)
         {
             if (!tr.isFile)
             {
-                conTreeRe(tr.children, path + "/" + tr.path);
+                result = conTreeRe(tr.children, path + "/" + tr.path);
+                if (result != CBSP_ERR_SUCCESS)
+                {
+                    return result;
+                }
             }
         }
+        return CBSP_ERR_SUCCESS;
     }
 
     inline CBSP_TREE dirTree(std::FILE *&fp)
