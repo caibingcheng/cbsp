@@ -105,6 +105,7 @@ namespace cbsp
             auto header = getHeader(fp);
             auto blocker = getFirst(fp, header);
             auto count = header.count;
+            int result = CBSP_ERR_SUCCESS;
             while (count-- > 0)
             {
                 if (!isCBSP(blocker))
@@ -123,12 +124,12 @@ namespace cbsp
                 int ret = genFile(fp, rpath.c_str(), blocker);
                 if (ret != CBSP_ERR_SUCCESS)
                 {
-                    printError(ret);
+                    result = ret;
                 }
                 blocker = getCBSPBlocker(fp, blocker.next);
             }
 
-            return CBSP_ERR_SUCCESS;
+            return result;
         }
 
         inline int printTree(std::FILE *&fp)

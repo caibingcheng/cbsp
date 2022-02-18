@@ -1,6 +1,7 @@
 #ifndef _CBSP_ERROR_H_
 #define _CBSP_ERROR_H_
 
+#include <deque>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -52,8 +53,8 @@ namespace cbsp
     public:
         static const char *getMessage()
         {
-            m_ready = false;
-            return m_msg.c_str();
+            m_ridx = std::min(++m_ridx, m_wmax);
+            return m_msgs[m_ridx - 1].c_str();
         }
         template <typename... ARGS>
         static void setMessage(const char *fmt, ARGS &&...args)
@@ -69,12 +70,20 @@ namespace cbsp
         }
         static void setMessage(std::string &&msg)
         {
-            m_ready = true;
-            m_msg = msg;
+            if (m_widx < m_wmax)
+            {
+                m_widx++;
+            }
+            else
+            {
+                m_msgs.pop_front();
+                m_ridx = std::max(--m_ridx, 0);
+            }
+            m_msgs.push_back(msg);
         }
         static bool hasMessage()
         {
-            return m_ready;
+            return m_ridx < m_widx;
         }
 
     private:
@@ -82,18 +91,22 @@ namespace cbsp
         ~ErrorMessage() = default;
 
     private:
-        static std::string m_msg;
-        static bool m_ready;
+        static std::deque<std::string> m_msgs;
+        static int m_ridx;
+        static int m_widx;
+        static int m_wmax;
     };
-    std::string ErrorMessage::m_msg = std::string();
-    bool ErrorMessage::m_ready = false;
+    std::deque<std::string> ErrorMessage::m_msgs{};
+    int ErrorMessage::m_ridx = 0;
+    int ErrorMessage::m_widx = 0;
+    int ErrorMessage::m_wmax = 10;
 
     inline void printError(int32_t err)
     {
         fprintf(stderr, "Error no.%d: %s\n", err, strError(err));
         if (errno != 0)
             fprintf(stderr, "Error no.%d: %s\n", err, strerror(errno));
-        if (ErrorMessage::hasMessage())
+        while (ErrorMessage::hasMessage())
         {
             fprintf(stderr, "Error no.%d: %s\n", err, ErrorMessage::getMessage());
         }
