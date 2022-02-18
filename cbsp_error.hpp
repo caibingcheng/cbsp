@@ -10,16 +10,35 @@
 namespace cbsp
 {
     const int32_t CBSP_ERR_BAIS = __LINE__ + 1;
-    const int32_t CBSP_ERR_SUCCESS = __LINE__ - CBSP_ERR_BAIS;
-    const int32_t CBSP_ERR_CREATE_FAILED = __LINE__ - CBSP_ERR_BAIS;
-    const int32_t CBSP_ERR_NO_CBSP = __LINE__ - CBSP_ERR_BAIS;
-    const int32_t CBSP_ERR_NO_TARGET = __LINE__ - CBSP_ERR_BAIS;
-    const int32_t CBSP_ERR_NO_SOURCE = __LINE__ - CBSP_ERR_BAIS;
-    const int32_t CBSP_ERR_AL_EXIST = __LINE__ - CBSP_ERR_BAIS;
-    const int32_t CBSP_ERR_AL_MODIFY = __LINE__ - CBSP_ERR_BAIS;
-    const int32_t CBSP_ERR_BAD_CBSP = __LINE__ - CBSP_ERR_BAIS;
-    const int32_t CBSP_ERR_BAD_PATH = __LINE__ - CBSP_ERR_BAIS;
-    const int32_t CBSP_ERR_BAD_OFFSET = __LINE__ - CBSP_ERR_BAIS;
+    const int32_t CBSP_ERR_SUCCESS = __LINE__ - CBSP_ERR_BAIS; // 0
+    const int32_t CBSP_ERR_CREATE_FAILED = 1 << (__LINE__ - CBSP_ERR_BAIS - 1);
+    const int32_t CBSP_ERR_NO_CBSP = 1 << (__LINE__ - CBSP_ERR_BAIS - 1);
+    const int32_t CBSP_ERR_NO_TARGET = 1 << (__LINE__ - CBSP_ERR_BAIS - 1);
+    const int32_t CBSP_ERR_NO_SOURCE = 1 << (__LINE__ - CBSP_ERR_BAIS - 1);
+    const int32_t CBSP_ERR_AL_EXIST = 1 << (__LINE__ - CBSP_ERR_BAIS - 1);
+    const int32_t CBSP_ERR_AL_MODIFY = 1 << (__LINE__ - CBSP_ERR_BAIS - 1);
+    const int32_t CBSP_ERR_BAD_CBSP = 1 << (__LINE__ - CBSP_ERR_BAIS - 1);
+    const int32_t CBSP_ERR_BAD_PATH = 1 << (__LINE__ - CBSP_ERR_BAIS - 1);
+    const int32_t CBSP_ERR_BAD_OFFSET = 1 << (__LINE__ - CBSP_ERR_BAIS - 1);
+
+    inline std::list<int32_t> extError(int32_t err)
+    {
+        uint32_t ext = 0x1;
+        std::list<int32_t> errs;
+        for (int i = 0; i < 31; i++)
+        {
+            int erro = (err & ext);
+            err ^= ext;
+            ext <<= 1;
+
+            if (erro != CBSP_ERR_SUCCESS)
+            {
+                errs.push_back(erro);
+            }
+        }
+
+        return errs;
+    }
 
     inline const char *strError(int32_t err)
     {
@@ -103,7 +122,11 @@ namespace cbsp
 
     inline void printError(int32_t err)
     {
-        fprintf(stderr, "Error no.%d: %s\n", err, strError(err));
+        auto errs = extError(err);
+        for (auto &e : errs)
+        {
+            fprintf(stderr, "Error no.%d: %s\n", e, strError(e));
+        }
         if (errno != 0)
             fprintf(stderr, "Error no.%d: %s\n", err, strerror(errno));
         while (ErrorMessage::hasMessage())

@@ -11,6 +11,7 @@
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
+#include <dirent.h>
 #include <sys/stat.h>
 #include <sys/param.h>
 
@@ -19,6 +20,95 @@
 
 namespace cbsp
 {
+    inline bool isFile(const char *path)
+    {
+        struct stat sts;
+        bool is_file = false;
+        // if path not exist, it's not a file
+        if (0 == stat(path, &sts))
+        {
+            // if not a directory, it's a file
+            is_file = !(sts.st_mode & __S_IFDIR);
+        }
+        return is_file;
+    }
+
+    inline bool isDir(const char *path)
+    {
+        struct stat sts;
+        bool is_dir = false;
+        // if not exist, not a directory
+        if (0 == stat(path, &sts))
+        {
+            // if has a directory flag, it's a directory
+            is_dir = sts.st_mode & __S_IFDIR;
+        }
+        return is_dir;
+    }
+
+    inline std::list<std::string> getDirFiles(const char *path)
+    {
+        if (!path)
+        {
+            return std::list<std::string>{};
+        }
+
+        // it is a file, return the only file
+        if (isFile(path))
+        {
+            return std::list<std::string>{path};
+        }
+
+        // if not a file and not a directory
+        if (!isDir(path))
+        {
+            return std::list<std::string>{};
+        }
+
+        DIR *dir = opendir(path);
+        // open directory failed
+        if (!dir)
+        {
+            return std::list<std::string>{};
+        }
+
+        std::string spath = [&path]
+        {
+            std::string tpath = path;
+            while (tpath.back() == '/')
+            {
+                tpath.pop_back();
+            }
+            return tpath + "/";
+        }();
+        struct dirent *ptr;
+        std::list<std::string> filenames;
+        while ((ptr = readdir(dir)) != 0)
+        {
+            if (strcmp(ptr->d_name, ".") != 0 && strcmp(ptr->d_name, "..") != 0)
+            {
+                std::string cand = spath + ptr->d_name;
+                if (isDir(cand.c_str()))
+                {
+                    auto subfiles = getDirFiles(cand.c_str());
+                    if (!subfiles.empty())
+                    {
+                        filenames.sort();
+                        subfiles.sort();
+                        filenames.merge(subfiles);
+                    }
+                }
+                else if (isFile(cand.c_str()))
+                {
+                    filenames.push_back(cand);
+                }
+            }
+        }
+        closedir(dir);
+
+        return filenames;
+    }
+
     inline std::string getFileName(std::FILE *&fp, const CBSP_BLOCKER &blocker)
     {
         auto filename = std::make_unique<char[]>(blocker.fnameLength + 1);
@@ -181,13 +271,8 @@ namespace cbsp
     {
         if (!tree.empty())
         {
-            struct stat sts;
-            bool is_file = false;
-            if (0 == stat(path.c_str(), &sts))
-            {
-                is_file = !(sts.st_mode & __S_IFDIR);
-            }
-            if (is_file)
+            // if not exists, or a directory, it's not a file
+            if (isFile(path.c_str()))
             {
                 ErrorMessage::setMessage("Target %s is not a directory", path.c_str());
                 return CBSP_ERR_AL_EXIST;
