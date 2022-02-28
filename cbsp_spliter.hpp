@@ -37,7 +37,9 @@ namespace cbsp
             uint32_t crc = crcBlocker(fp, blocker);
             if (crc != blocker.crc)
             {
-                return CBSP_ERR_AL_MODIFY;
+                ErrorMessage::setMessage("Blocker %s broken", filepath);
+                ErrorMessage::setMessage("Mismatch crc 0x%x 0x%x", crc, blocker.crc);
+                return CBSP_ERR_AL_MODIFY | CBSP_ERR_BAD_CBSP;
             }
 
             file = std::fopen(filepath, "wb");
@@ -55,6 +57,28 @@ namespace cbsp
 
             std::fclose(file);
             std::fseek(fp, _offset, SEEK_SET);
+
+            // after write done, check crc again
+            file = std::fopen(filepath, "rb");
+            if (!file)
+            {
+                return CBSP_ERR_NO_TARGET;
+            }
+            crc = 0x0;
+            ChunkFile chunkTest(file, batch_size);
+            for (auto it = chunkTest.begin(); it != chunkTest.end(); it++)
+            {
+                auto &chunk = *it;
+                crc = crc32(reinterpret_cast<uint8_t *>(chunk.data()), chunk.size(), crc);
+            }
+            std::fclose(file);
+
+            if (crc != blocker.crc)
+            {
+                ErrorMessage::setMessage("Extract %s failed", filepath);
+                ErrorMessage::setMessage("Mismatch crc 0x%x 0x%x", crc, blocker.crc);
+                return CBSP_ERR_AL_MODIFY;
+            }
 
             return CBSP_ERR_SUCCESS;
         }
@@ -126,11 +150,7 @@ namespace cbsp
                 }
                 cbsp_assert(!rpath.empty());
 
-                int ret = genFile(fp, rpath.c_str(), blocker);
-                if (ret != CBSP_ERR_SUCCESS)
-                {
-                    result = ret;
-                }
+                result |= genFile(fp, rpath.c_str(), blocker);
                 blocker = getCBSPBlocker(fp, blocker.next);
             }
 

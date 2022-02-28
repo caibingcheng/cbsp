@@ -20,6 +20,7 @@ namespace cbsp
     const int32_t CBSP_ERR_BAD_CBSP = 1 << (__LINE__ - CBSP_ERR_BAIS - 1);
     const int32_t CBSP_ERR_BAD_PATH = 1 << (__LINE__ - CBSP_ERR_BAIS - 1);
     const int32_t CBSP_ERR_BAD_OFFSET = 1 << (__LINE__ - CBSP_ERR_BAIS - 1);
+    const int32_t CBSP_ERR_DEN_ACCESS = 1 << (__LINE__ - CBSP_ERR_BAIS - 1);
 
     inline std::list<int32_t> extError(int32_t err)
     {
@@ -62,6 +63,8 @@ namespace cbsp
             return "Bad path";
         case CBSP_ERR_BAD_OFFSET:
             return "Bad offset";
+        case CBSP_ERR_DEN_ACCESS:
+            return "Access denied";
         default:
             return "Unkown";
         }
@@ -118,7 +121,7 @@ namespace cbsp
     std::deque<std::string> ErrorMessage::m_msgs{};
     int ErrorMessage::m_ridx = 0;
     int ErrorMessage::m_widx = 0;
-    int ErrorMessage::m_wmax = 10;
+    int ErrorMessage::m_wmax = 512;
 
     inline void printError(int32_t err)
     {

@@ -7,6 +7,7 @@
 #include "cbsp_spliter.hpp"
 #include "cbsp_error.hpp"
 #include "cbsp_file.hpp"
+#include "cbsp_tree.hpp"
 
 namespace cbsp
 {
@@ -28,14 +29,30 @@ namespace cbsp
             return ret;
         }
 
+        auto add = [&fp](const char *source)
+        {
+            int ret = combiner::add(&fp, source);
+            if (ret != CBSP_ERR_SUCCESS)
+            {
+                printError(ret);
+            }
+            return ret;
+        };
+
         for (auto &source : clist)
         {
-            int _ret = combiner::add(&fp, source);
-            if (_ret != CBSP_ERR_SUCCESS)
+            if (isDir(source))
             {
-                printError(_ret);
+                auto files = getDirFiles(source);
+                for (auto &file : files)
+                {
+                    ret |= add(file.c_str());
+                }
             }
-            ret |= _ret;
+            else
+            {
+                ret |= add(source);
+            }
         }
         return ret;
     }
@@ -74,11 +91,11 @@ namespace cbsp
         {
             printError(ret);
         }
-        ret = spliter::printBlockers(&fp);
-        if (ret != CBSP_ERR_SUCCESS)
-        {
-            printError(ret);
-        }
+        // ret = spliter::printBlockers(&fp);
+        // if (ret != CBSP_ERR_SUCCESS)
+        // {
+        //     printError(ret);
+        // }
         ret = spliter::printTree(&fp);
         if (ret != CBSP_ERR_SUCCESS)
         {

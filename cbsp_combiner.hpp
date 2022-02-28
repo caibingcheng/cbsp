@@ -45,18 +45,6 @@ namespace cbsp
 
         int add(std::FILE *&fp, const char *opath)
         {
-            // if a directory
-            if (isDir(opath))
-            {
-                auto files = getDirFiles(opath);
-                int ret = CBSP_ERR_SUCCESS;
-                for (auto &file : files)
-                {
-                    ret |= add(fp, file.c_str());
-                }
-                return ret;
-            }
-
             if (!opath)
             {
                 return CBSP_ERR_BAD_PATH;
@@ -72,6 +60,12 @@ namespace cbsp
             if (!realpath(opath, filepath))
             {
                 return CBSP_ERR_NO_SOURCE;
+            }
+
+            if (access(filepath, R_OK) != 0)
+            {
+                ErrorMessage::setMessage("Access deined %s", filepath);
+                return CBSP_ERR_DEN_ACCESS;
             }
 
             // check if the source file already exists
