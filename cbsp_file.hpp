@@ -17,7 +17,7 @@ namespace cbsp
     {
     public:
         Chunk() = default;
-        Chunk(const uint64_t &size) : m_size(0), m_data(new char[size]) {}
+        Chunk(const uint64_t &size) : m_size(0), m_data(new char[size]), m_rsize(size) {}
         virtual ~Chunk() = default;
 
         virtual char *data() const noexcept { return m_data.get(); }
@@ -26,6 +26,7 @@ namespace cbsp
 
     protected:
         uint64_t m_size;
+        uint64_t m_rsize;
         std::shared_ptr<char[]> m_data;
     };
 
@@ -38,7 +39,7 @@ namespace cbsp
                                       Chunk(flength(file)),        // memory allocated
                                       m_storage(std::ftell(file)), // current position
                                       m_mlength(flength(file)),    // file length
-                                      m_length(m_mlength),         // chunk length <= file length
+                                      m_length(m_mlength),         // chunk length <= file length, the end of the chunk
                                       m_offset(0),                 // start position
                                       m_bsize(m_mlength)           // expected chunk size
         {
@@ -67,7 +68,7 @@ namespace cbsp
                                                                                                             m_mlength(flength(file)),
                                                                                                             m_length(rlength(offset, length, m_mlength)),
                                                                                                             m_offset((offset > m_length) ? m_length : offset),
-                                                                                                            m_bsize(size)
+                                                                                                            m_bsize((size > length) ? length : size)
         {
         }
         virtual ~ChunkFile()
@@ -75,18 +76,7 @@ namespace cbsp
             reset();
         };
 
-        ChunkFile &operator=(const ChunkFile &other)
-        {
-            m_file = other.m_file;
-            m_storage = other.m_storage;
-            m_mlength = other.m_mlength;
-            m_offset = other.m_offset;
-            m_length = other.m_length;
-            m_bsize = other.m_bsize;
-            m_size = other.m_size;
-            m_data = other.m_data;
-            return *this;
-        }
+        ChunkFile &operator=(const ChunkFile &other) = default;
         bool operator==(const ChunkFile &other) const noexcept
         {
             return std::tie(m_file, m_offset, m_length) == std::tie(other.m_file, other.m_offset, other.m_length);
@@ -122,6 +112,7 @@ namespace cbsp
             else
             {
                 std::fseek(m_file, m_offset, SEEK_SET);
+                memset(m_data.get(), 0, m_rsize);
                 m_size = std::fread(m_data.get(), sizeof(char), m_bsize, m_file);
                 if (m_size != m_bsize)
                 {

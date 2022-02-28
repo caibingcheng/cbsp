@@ -58,7 +58,7 @@ namespace cbsp
             std::fclose(file);
             std::fseek(fp, _offset, SEEK_SET);
 
-            // after write done, check crc again
+            // after write done, check the outfile crc again
             file = std::fopen(filepath, "rb");
             if (!file)
             {
