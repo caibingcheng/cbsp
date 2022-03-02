@@ -7,6 +7,8 @@ CXX ?= g++
 SRC_EXT = cpp
 # Path to the source directory, relative to the makefile
 SRC_PATH = .
+# Path to exclude
+EXC_PATH = ./test
 # Space-separated pkg-config libraries used by this project
 LIBS =
 # General compiler flags
@@ -82,9 +84,9 @@ install: export BIN_PATH := bin/release
 # Find all source files in the source directory, sorted by most
 # recently modified
 ifeq ($(UNAME_S),Darwin)
-	SOURCES = $(shell find $(SRC_PATH) -name '*.$(SRC_EXT)' | sort -k 1nr | cut -f2-)
+	SOURCES = $(shell find $(SRC_PATH) -path $(EXC_PATH) -prune -o -name '*.$(SRC_EXT)' -print | sort -k 1nr | cut -f2-)
 else
-	SOURCES = $(shell find $(SRC_PATH) -name '*.$(SRC_EXT)' -printf '%T@\t%p\n' \
+	SOURCES = $(shell find $(SRC_PATH) -path $(EXC_PATH) -prune -o -name '*.$(SRC_EXT)' -printf '%T@\t%p\n' \
 						| sort -k 1nr | cut -f2-)
 endif
 

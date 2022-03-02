@@ -14,6 +14,7 @@
 #include <unistd.h>
 #endif
 
+#include "cbsp_error.hpp"
 #include "cbsp_structor.hpp"
 
 #ifdef DEBUG

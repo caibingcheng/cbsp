@@ -8,6 +8,7 @@
 
 #include "cbsp_structor.hpp"
 #include "cbsp_error.hpp"
+#include "cbsp_buffer.hpp"
 #include "cbsp_utils.hpp"
 #include "cbsp_crc.hpp"
 
@@ -17,7 +18,7 @@ namespace cbsp
     {
     public:
         Chunk() = default;
-        Chunk(const uint64_t &size) : m_size(0), m_data(new char[size]), m_rsize(size) {}
+        Chunk(const uint64_t &size) : m_size(0), m_data(size), m_rsize(size) {}
         virtual ~Chunk() = default;
 
         virtual char *data() const noexcept { return m_data.get(); }
@@ -27,7 +28,7 @@ namespace cbsp
     protected:
         uint64_t m_size;
         uint64_t m_rsize;
-        std::shared_ptr<char[]> m_data;
+        Buffer m_data;
     };
 
     class ChunkFile : public Chunk
@@ -76,7 +77,10 @@ namespace cbsp
             reset();
         };
 
-        ChunkFile &operator=(const ChunkFile &other) = default;
+        ChunkFile &operator=(const ChunkFile &other)
+        {
+            std::memcpy(this, &other, sizeof(ChunkFile));
+        }
         bool operator==(const ChunkFile &other) const noexcept
         {
             return std::tie(m_file, m_offset, m_length) == std::tie(other.m_file, other.m_offset, other.m_length);

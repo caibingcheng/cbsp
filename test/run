@@ -21,8 +21,6 @@ function full_test() {
     CONT_LENGTH=10000
     FILE_LENGTH=1000
 
-    make debug
-
     TEST_DIR_IN=.test_in
     TEST_DIR_OUT=.test_out
 
