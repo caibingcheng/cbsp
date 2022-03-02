@@ -3,6 +3,7 @@
 #include <cstdio>
 #include <cstring>
 
+#include "cbsp_progress.hpp"
 #include "cbsp_combiner.hpp"
 #include "cbsp_spliter.hpp"
 #include "cbsp_error.hpp"
@@ -39,6 +40,7 @@ namespace cbsp
             return ret;
         };
 
+        Progress::start();
         for (auto &source : clist)
         {
             if (isDir(source))
@@ -54,6 +56,7 @@ namespace cbsp
                 ret |= add(source);
             }
         }
+        Progress::stop();
         return ret;
     }
     inline int split(const char *target, const char *outdir = nullptr)

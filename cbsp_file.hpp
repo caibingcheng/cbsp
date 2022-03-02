@@ -13,7 +13,7 @@
 
 namespace cbsp
 {
-    const static uint64_t batch_size = 10485760;
+    const static uint64_t batch_size = 1024 * 64;
 
     class Chunk
     {

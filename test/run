@@ -19,7 +19,7 @@ function full_test() {
     ln -sf ../cbsp cbsp
 
     CONT_LENGTH=10000
-    FILE_LENGTH=1000
+    FILE_LENGTH=100
 
     TEST_DIR_IN=.test_in
     TEST_DIR_OUT=.test_out
@@ -58,7 +58,7 @@ function full_test() {
     }
 
     function generate_randfile() {
-        for i in {1..1000}; do
+        for i in {1..100}; do
             generate_randpath $TEST_DIR_IN
             rand_text=$(generate_randcontent)
             echo $rand_text >>$RAND_PATH

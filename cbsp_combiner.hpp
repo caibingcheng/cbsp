@@ -10,6 +10,7 @@
 #include <cstdlib>
 #include <sys/param.h>
 
+#include "cbsp_progress.hpp"
 #include "cbsp_structor.hpp"
 #include "cbsp_error.hpp"
 #include "cbsp_file.hpp"
@@ -163,6 +164,7 @@ namespace cbsp
             {
                 ChunkFile chunkfile(file, batch_size);
 
+                size_t load_size = 0;
                 for (auto it = chunkfile.begin(); it != chunkfile.end(); it++)
                 {
                     auto &chunk = *it;
@@ -172,6 +174,15 @@ namespace cbsp
                         std::fclose(file);
                         return CBSP_ERR_NO_SOURCE;
                     }
+
+                    load_size += chunk.size();
+                    Progress::set({
+                        .msg = filepath,
+                        .beg = 0,
+                        .cur = load_size,
+                        .end = length,
+                    });
+
                     write(fp, chunk.data(), chunk.size());
                     crc = crc32(reinterpret_cast<uint8_t *>(chunk.data()), chunk.size(), crc);
                 }
@@ -180,8 +191,27 @@ namespace cbsp
 
             // set blocker header
             blocker.crc = crc;
+
+            Progress::set({
+                .msg = "writing blocker struct",
+                .beg = 0,
+                .cur = 1,
+                .end = 3,
+            });
             write(fp, blocker, stOffset, sizeof(CBSP_BLOCKER));
+            Progress::set({
+                .msg = "writing blocker filename",
+                .beg = 0,
+                .cur = 2,
+                .end = 3,
+            });
             write(fp, const_cast<char *>(filename.c_str()), fnameOffset, fnameLength);
+            Progress::set({
+                .msg = "writing blocker directory",
+                .beg = 0,
+                .cur = 3,
+                .end = 3,
+            });
             write(fp, const_cast<char *>(filedir.c_str()), fdirOffset, fdirLength);
 
             // after write done
