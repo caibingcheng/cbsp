@@ -1,4 +1,23 @@
-function test() {
+#!/bin/bash
+
+function unit_test() {
+    rm -fr .build
+    mkdir -p .build
+    cd .build
+    cmake ..
+    make
+    cd -
+    rm cbsp_test
+    ln -sf .build/cbsp_test cbsp_test
+    ./cbsp_test
+}
+
+function full_test() {
+    cd ..
+    make debug
+    cd -
+    ln -sf ../cbsp cbsp
+
     CONT_LENGTH=10000
     FILE_LENGTH=1000
 
@@ -24,8 +43,7 @@ function test() {
     function generate_randpath() {
         RAND_PATH=$1
         # mkdir
-        if [[ $RANDOM -gt 15000 ]];
-        then
+        if [[ $RANDOM -gt 15000 ]]; then
             if [ -f "$RAND_PATH" ]; then
                 RAND_PATH=$1_$RANDOM
                 generate_randpath $RAND_PATH
@@ -45,7 +63,7 @@ function test() {
         for i in {1..1000}; do
             generate_randpath $TEST_DIR_IN
             rand_text=$(generate_randcontent)
-            echo $rand_text >> $RAND_PATH
+            echo $rand_text >>$RAND_PATH
         done
     }
 
@@ -73,4 +91,7 @@ function test() {
     fi
 }
 
-test
+unit_test
+if [[ "$1" == "fulltest" ]]; then
+    full_test
+fi
