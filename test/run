@@ -89,7 +89,8 @@ function full_test() {
     fi
 }
 
-unit_test
 if [[ "$1" == "fulltest" ]]; then
-    full_test
+    unit_test && full_test
+else
+    unit_test
 fi

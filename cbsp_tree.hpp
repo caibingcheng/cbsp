@@ -16,6 +16,7 @@
 #include <sys/param.h>
 
 #include "cbsp_structor.hpp"
+#include "cbsp_buffer.hpp"
 #include "cbsp_utils.hpp"
 
 namespace cbsp
@@ -111,7 +112,7 @@ namespace cbsp
 
     inline std::string getFileName(std::FILE *&fp, const CBSP_BLOCKER &blocker)
     {
-        auto filename = std::make_unique<char[]>(blocker.fnameLength + 1);
+        Buffer filename(blocker.fnameLength + 1);
         memset(filename.get(), 0, blocker.fnameLength + 1);
         read(fp, filename.get(), blocker.fnameOffset, blocker.fnameLength);
 
@@ -120,7 +121,7 @@ namespace cbsp
 
     inline std::string getFileDir(std::FILE *&fp, const CBSP_BLOCKER &blocker)
     {
-        auto filedir = std::make_unique<char[]>(blocker.fdirLength + 1);
+        Buffer filedir(blocker.fdirLength + 1);
         memset(filedir.get(), 0, blocker.fdirLength + 1);
         read(fp, filedir.get(), blocker.fdirOffset, blocker.fdirLength);
 

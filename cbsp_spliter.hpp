@@ -31,7 +31,6 @@ namespace cbsp
             auto _offset = std::ftell(fp);
 
             std::fseek(fp, blocker.offset, SEEK_SET);
-            const static uint64_t batch_size = 10485760;
             uint64_t length = blocker.length;
 
             uint32_t crc = crcBlocker(fp, blocker);
@@ -98,6 +97,11 @@ namespace cbsp
             if (!crcMatch(fp))
             {
                 return CBSP_ERR_BAD_CBSP;
+            }
+
+            if (getHeader(fp).count <= 0)
+            {
+                return CBSP_ERR_NO_CBSP;
             }
 
             int result = CBSP_ERR_SUCCESS;
@@ -172,6 +176,11 @@ namespace cbsp
             if (!crcMatch(fp))
             {
                 return CBSP_ERR_BAD_CBSP;
+            }
+
+            if (getHeader(fp).count <= 0)
+            {
+                return CBSP_ERR_NO_CBSP;
             }
 
             auto tr = dirTree(fp);

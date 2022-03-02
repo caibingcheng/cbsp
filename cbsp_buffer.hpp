@@ -25,6 +25,7 @@ namespace cbsp
     {
     public:
         Buffer() : m_buffer(empty()) {}
+        Buffer(Buffer &&buffer) { *this = std::move(buffer); }
         Buffer(const size_t &size) noexcept
         {
             auto it = getBufferFromFree(size);

@@ -161,7 +161,6 @@ namespace cbsp
             uint32_t crc = 0x0;
             std::fseek(fp, offset, SEEK_SET);
             {
-                const static uint64_t batch_size = 10485760; // 10 × 1024 × 1024
                 ChunkFile chunkfile(file, batch_size);
 
                 for (auto it = chunkfile.begin(); it != chunkfile.end(); it++)

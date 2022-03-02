@@ -6,6 +6,7 @@
 #include <cstring>
 
 #include "cbsp_structor.hpp"
+#include "cbsp_file.hpp"
 #include "cbsp_error.hpp"
 #include "cbsp_utils.hpp"
 
@@ -47,24 +48,14 @@ namespace cbsp
             return crc;
         }
 
-        auto length = blocker.length;
-        const static uint64_t batch_size = 10485760;
-        auto buffer = std::make_unique<char[]>(batch_size);
-        cbsp_assert_msg(buffer.get() != nullptr, "buffer pointer %p\n", buffer.get());
-
-        auto _offset = std::ftell(fp);
-        while (length > batch_size)
         {
-            auto gcount = std::fread(buffer.get(), sizeof(char), batch_size, fp);
-            crc = crc32(reinterpret_cast<uint8_t *>(buffer.get()), gcount, crc);
-            length -= batch_size;
+            ChunkFile chunkfile(fp, batch_size, blocker.offset, blocker.length);
+            for (auto it = chunkfile.begin(); it != chunkfile.end(); it++)
+            {
+                auto chunk = *it;
+                crc = crc32(reinterpret_cast<uint8_t *>(chunk.data()), chunk.size(), crc);
+            }
         }
-        if (length > 0)
-        {
-            auto gcount = std::fread(buffer.get(), sizeof(char), length, fp);
-            crc = crc32(reinterpret_cast<uint8_t *>(buffer.get()), gcount, crc);
-        }
-        std::fseek(fp, _offset, SEEK_SET);
 
         return crc;
     }

@@ -10,10 +10,11 @@
 #include "cbsp_error.hpp"
 #include "cbsp_buffer.hpp"
 #include "cbsp_utils.hpp"
-#include "cbsp_crc.hpp"
 
 namespace cbsp
 {
+    const static uint64_t batch_size = 10485760;
+
     class Chunk
     {
     public:
@@ -276,12 +277,6 @@ namespace cbsp
             {
                 close();
                 return CBSP_ERR_NO_CBSP;
-            }
-
-            if (!crcMatch(m_file))
-            {
-                close();
-                return CBSP_ERR_BAD_CBSP;
             }
 
             return CBSP_ERR_SUCCESS;
