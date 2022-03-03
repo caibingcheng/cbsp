@@ -96,6 +96,8 @@ namespace cbsp
         uint64_t fdirOffset = 0;
         // file dir length
         uint64_t fdirLength = 0;
+        // check path fast
+        uint32_t pathDigest = 0;
 
         // next cbsp blocker offset
         uint64_t next = 0;

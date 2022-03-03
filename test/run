@@ -12,12 +12,14 @@ function unit_test() {
     ./cbsp_test
 }
 
-function full_test() {
+function build_test() {
     cd ..
     make debug
     cd -
     ln -sf ../cbsp cbsp
+}
 
+function full_test() {
     CONT_LENGTH=10000
     FILE_LENGTH=1000
 
@@ -90,7 +92,9 @@ function full_test() {
 }
 
 if [[ "$1" == "fulltest" ]]; then
-    unit_test && full_test
+    unit_test && build_test && full_test
+elif [[ "$1" == "buildtest" ]]; then
+    build_test
 else
     unit_test
 fi

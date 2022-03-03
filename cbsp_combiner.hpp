@@ -28,6 +28,7 @@ namespace cbsp
 
             std::string filename = fileName(filepath);
             std::string filedir = fileDir(filepath);
+            uint32_t pathDigest = crc32(reinterpret_cast<uint8_t *>(const_cast<char *>(filepath)), strlen(filepath));
 
             auto header = getHeader(fp);
             auto offset = header.first;
@@ -35,7 +36,8 @@ namespace cbsp
             while (count-- > 0)
             {
                 auto blocker = getCBSPBlocker(fp, offset);
-                if (filename == getFileName(fp, blocker) &&
+                if (pathDigest == blocker.pathDigest &&
+                    filename == getFileName(fp, blocker) &&
                     filedir == getFileDir(fp, blocker))
                     return true;
                 offset = blocker.next;
@@ -156,6 +158,7 @@ namespace cbsp
             blocker.fnameLength = fnameLength;
             blocker.fdirOffset = fdirOffset;
             blocker.fdirLength = fdirLength;
+            blocker.pathDigest = crc32(reinterpret_cast<uint8_t *>(filepath), strlen(filepath));
 
             // cp source to target
             uint32_t crc = 0x0;

@@ -4,17 +4,21 @@ cbsp is a header-only C++ library. It provides utility methods for archiving and
 
 ### Comparation
 
-#### archive
 
-||cbsp|tar|
-|--|--|--|
-|1GB|0.642s|0.711s|
+#### Version 22.2.10.0
+##### archive
 
-#### extract
+|files|size|cbsp|tar|
+|--|--|--|--|
+|1|1GB|0.642s|0.711s|
+|1000|100MB|17.900s|0.147s|
 
-||cbsp|tar|
-|--|--|--|
-|1GB|0.836s|0.862s|
+##### extract
+
+|files|size|cbsp|tar|
+|--|--|--|--|
+|1|1GB|0.836s|0.862s|
+|1000|100MB|16.777s|0.180s|
 
 ### what's a cbsp file?
 
