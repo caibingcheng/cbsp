@@ -28,7 +28,7 @@ namespace cbsp
 
             std::string filename = fileName(filepath);
             std::string filedir = fileDir(filepath);
-            uint32_t pathDigest = crc32(reinterpret_cast<uint8_t *>(const_cast<char *>(filepath)), strlen(filepath));
+            uint32_t pathDigest = crc32(filepath, strlen(filepath));
 
             auto header = getHeader(fp);
             auto offset = header.first;
@@ -158,7 +158,7 @@ namespace cbsp
             blocker.fnameLength = fnameLength;
             blocker.fdirOffset = fdirOffset;
             blocker.fdirLength = fdirLength;
-            blocker.pathDigest = crc32(reinterpret_cast<uint8_t *>(filepath), strlen(filepath));
+            blocker.pathDigest = crc32(filepath, strlen(filepath));
 
             // cp source to target
             uint32_t crc = 0x0;
@@ -176,7 +176,7 @@ namespace cbsp
                         return CBSP_ERR_NO_SOURCE;
                     }
                     write(fp, chunk.data(), chunk.size());
-                    crc = crc32(reinterpret_cast<uint8_t *>(chunk.data()), chunk.size(), crc);
+                    crc = crc32(chunk.data(), chunk.size(), crc);
                 }
             }
             std::fclose(file);

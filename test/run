@@ -91,10 +91,10 @@ function full_test() {
     fi
 }
 
-if [[ "$1" == "fulltest" ]]; then
-    unit_test && build_test && full_test
+if [[ "$1" == "unittest" ]]; then
+    unit_test
 elif [[ "$1" == "buildtest" ]]; then
     build_test
 else
-    unit_test
+    unit_test && build_test && full_test
 fi

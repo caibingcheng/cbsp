@@ -22,7 +22,7 @@ namespace cbsp
      * Alias:   CRC_32/ADCCP
      * Use:     WinRAR,ect.
      *****************************************************************************/
-    inline uint32_t crc32(uint8_t *data, uint16_t length, uint32_t crc = 0x0)
+    inline uint32_t crc32(const uint8_t *data, uint16_t length, uint32_t crc = 0x0)
     {
         uint8_t i;
         crc = ~crc;
@@ -39,6 +39,10 @@ namespace cbsp
         }
         return ~crc;
     }
+    inline uint32_t crc32(const char *data, uint16_t length, uint32_t crc = 0x0)
+    {
+        return crc32(reinterpret_cast<const uint8_t *>(data), length, crc);
+    }
 
     inline uint32_t crcBlocker(std::FILE *&fp, const CBSP_BLOCKER &blocker)
     {
@@ -53,7 +57,7 @@ namespace cbsp
             for (auto it = chunkfile.begin(); it != chunkfile.end(); it++)
             {
                 auto chunk = *it;
-                crc = crc32(reinterpret_cast<uint8_t *>(chunk.data()), chunk.size(), crc);
+                crc = crc32(chunk.data(), chunk.size(), crc);
             }
         }
 

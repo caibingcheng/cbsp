@@ -11,6 +11,7 @@ include_directories(../)
 add_executable(
     cbsp_test
     cbsp_buffer_test.cpp
+    cbsp_crc_test.cpp
 )
 target_link_libraries(
     cbsp_test

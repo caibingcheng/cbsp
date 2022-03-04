@@ -70,58 +70,61 @@ namespace cbsp
         }
     }
 
-    class ErrorMessage final
+    namespace
     {
-    public:
-        static const char *getMessage()
+        class ErrorMessage final
         {
-            m_ridx = std::min(++m_ridx, m_wmax);
-            return m_msgs[m_ridx - 1].c_str();
-        }
-        template <typename... ARGS>
-        static void setMessage(const char *fmt, ARGS &&...args)
-        {
-            char msg[1024];
-            memset(msg, 0, sizeof(msg));
-            sprintf(msg, fmt, args...);
-            setMessage(msg);
-        }
-        static void setMessage(const char *message)
-        {
-            setMessage(std::string(message));
-        }
-        static void setMessage(std::string &&msg)
-        {
-            if (m_widx < m_wmax)
+        public:
+            static const char *getMessage()
             {
-                m_widx++;
+                m_ridx = std::min(++m_ridx, m_wmax);
+                return m_msgs[m_ridx - 1].c_str();
             }
-            else
+            template <typename... ARGS>
+            static void setMessage(const char *fmt, ARGS &&...args)
             {
-                m_msgs.pop_front();
-                m_ridx = std::max(--m_ridx, 0);
+                char msg[1024];
+                memset(msg, 0, sizeof(msg));
+                sprintf(msg, fmt, args...);
+                setMessage(msg);
             }
-            m_msgs.push_back(msg);
-        }
-        static bool hasMessage()
-        {
-            return m_ridx < m_widx;
-        }
+            static void setMessage(const char *message)
+            {
+                setMessage(std::string(message));
+            }
+            static void setMessage(std::string &&msg)
+            {
+                if (m_widx < m_wmax)
+                {
+                    m_widx++;
+                }
+                else
+                {
+                    m_msgs.pop_front();
+                    m_ridx = std::max(--m_ridx, 0);
+                }
+                m_msgs.push_back(msg);
+            }
+            static bool hasMessage()
+            {
+                return m_ridx < m_widx;
+            }
 
-    private:
-        ErrorMessage() = delete;
-        ~ErrorMessage() = default;
+        private:
+            ErrorMessage() = delete;
+            ~ErrorMessage() = default;
 
-    private:
-        static std::deque<std::string> m_msgs;
-        static int m_ridx;
-        static int m_widx;
-        static int m_wmax;
-    };
-    std::deque<std::string> ErrorMessage::m_msgs{};
-    int ErrorMessage::m_ridx = 0;
-    int ErrorMessage::m_widx = 0;
-    int ErrorMessage::m_wmax = 512;
+        private:
+            static std::deque<std::string> m_msgs;
+            static int m_ridx;
+            static int m_widx;
+            static int m_wmax;
+        };
+        std::deque<std::string> ErrorMessage::m_msgs{};
+        int ErrorMessage::m_ridx = 0;
+        int ErrorMessage::m_widx = 0;
+        int ErrorMessage::m_wmax = 512;
+    }
 
     inline void printError(int32_t err)
     {

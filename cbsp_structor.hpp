@@ -60,7 +60,7 @@ namespace cbsp
         uint64_t last = 0;
     } CBSP_HEADER;
 
-    void print(const _CBSP_HEADER &header)
+    inline void print(const _CBSP_HEADER &header)
     {
         printf("*****************HEADER*******************\n");
         printf("size   : %u\n", header.size);
@@ -107,7 +107,7 @@ namespace cbsp
         uint64_t append = 0;
     } CBSP_BLOCKER;
 
-    void print(const _CBSP_BLOCKER &blocker)
+    inline void print(const _CBSP_BLOCKER &blocker)
     {
         printf("*****************BLOCKER******************\n");
         printf("size       : %u\n", blocker.size);
@@ -137,7 +137,7 @@ namespace cbsp
         uint64_t next = 0;
     } CBSP_BLOCKER_APPEND;
 
-    void print(const _CBSP_BLOCKER_APPEND &append)
+    inline void print(const _CBSP_BLOCKER_APPEND &append)
     {
         printf("*****************APPEND ******************\n");
         printf("size       : %u\n", append.size);

@@ -68,7 +68,7 @@ namespace cbsp
             for (auto it = chunkTest.begin(); it != chunkTest.end(); it++)
             {
                 auto &chunk = *it;
-                crc = crc32(reinterpret_cast<uint8_t *>(chunk.data()), chunk.size(), crc);
+                crc = crc32(chunk.data(), chunk.size(), crc);
             }
             std::fclose(file);
 

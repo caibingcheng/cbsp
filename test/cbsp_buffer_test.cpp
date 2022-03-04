@@ -69,3 +69,35 @@ TEST(BufferTest, SELECT)
     ASSERT_EQ(cbsp::Buffer::inValidCount(), 1);
     ASSERT_EQ(cbsp::Buffer::count(), 10);
 }
+
+TEST(BufferTest, MEMSET)
+{
+    cbsp::Buffer::clear();
+    cbsp::Buffer buffer;
+
+    auto isClear = [](cbsp::Buffer &buffer)
+    {
+        for (int i = 0; i < buffer.size(); ++i)
+        {
+            if (buffer[i] != 0)
+                return false;
+        }
+        return true;
+    };
+
+    for (int i = 0; i < 100; i++)
+    {
+        buffer = cbsp::Buffer(1024 + i);
+        ASSERT_TRUE(isClear(buffer));
+        memset(buffer.get(), 1, buffer.size());
+    }
+
+    for (int i = 0; i < 100; i++)
+    {
+        buffer = cbsp::Buffer(1024 + i);
+        ASSERT_TRUE(isClear(buffer));
+        memset(buffer.get(), 1, buffer.size());
+    }
+
+    ASSERT_EQ(cbsp::Buffer::count(), 10);
+}
