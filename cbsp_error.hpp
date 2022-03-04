@@ -1,6 +1,7 @@
 #ifndef _CBSP_ERROR_H_
 #define _CBSP_ERROR_H_
 
+#include <list>
 #include <deque>
 #include <cstdint>
 #include <cstdio>

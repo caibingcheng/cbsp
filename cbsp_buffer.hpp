@@ -1,7 +1,7 @@
 #ifndef _CBSP_BUFFER_H_
 #define _CBSP_BUFFER_H_
 
-#include <list>
+#include <map>
 #include <cstdio>
 #include <memory>
 #include <cstring>
@@ -17,9 +17,8 @@ namespace cbsp
         size_t size;
     } CBSP_BUFFER;
 
-    using CBSP_BUFFER_LS = std::list<CBSP_BUFFER>;
-    using CBSP_BUFFER_IT = CBSP_BUFFER_LS::iterator;
-    using CBSP_BUFFER_PR = std::pair<CBSP_BUFFER, CBSP_BUFFER_IT>;
+    using CBSP_BUFFER_RB = std::multimap<size_t, CBSP_BUFFER>;
+    using CBSP_BUFFER_IT = CBSP_BUFFER_RB::iterator;
 
     namespace
     {
@@ -36,8 +35,9 @@ namespace cbsp
                     auto buffer = generateBuffer(size);
                     it = setBufferToFree(buffer);
                 }
-                removeBufferFromFree(it);
                 m_buffer = setBufferToBusy(it);
+                cbsp_assert(!isEmpty());
+                removeBufferFromFree(it);
                 memset(this->get(), 0, this->size());
             }
             ~Buffer()
@@ -79,6 +79,12 @@ namespace cbsp
                 return size_full;
             }
 
+            static const size_t capacity(const size_t &size) noexcept
+            {
+                size_full = size;
+                return size_full;
+            }
+
             static const size_t count() noexcept
             {
                 return buffer_free.size() + buffer_busy.size();
@@ -104,37 +110,24 @@ namespace cbsp
         private:
             void reset() noexcept
             {
-                if (!isEmpty())
-                {
-                    removeBufferFromBusy(m_buffer);
-                    setBufferToFree(m_buffer);
-                }
+                setBufferToFree(m_buffer);
+                removeBufferFromBusy(m_buffer);
                 m_buffer = empty();
             }
 
-            CBSP_BUFFER prBuffer(const CBSP_BUFFER_PR &it) const noexcept
+            CBSP_BUFFER &prBuffer(const CBSP_BUFFER_IT &it) const noexcept
             {
-                return it.first;
+                return it->second;
             }
 
-            CBSP_BUFFER_IT prIterator(const CBSP_BUFFER_PR &it) const noexcept
+            CBSP_BUFFER_IT empty() noexcept
             {
-                return it.second;
+                return buffer_free.end();
             }
 
-            CBSP_BUFFER_PR cvtIt2Pr(const CBSP_BUFFER_IT &it) const noexcept
+            const bool isEmpty(const CBSP_BUFFER_IT &it) noexcept
             {
-                return {*it, it};
-            }
-
-            CBSP_BUFFER_PR empty() noexcept
-            {
-                return cvtIt2Pr(buffer_empty.begin());
-            }
-
-            const bool isEmpty(const CBSP_BUFFER_PR &it) noexcept
-            {
-                return it.second == empty().second;
+                return it == buffer_free.end() || it == buffer_busy.end();
             }
 
             const bool isEmpty() noexcept
@@ -142,7 +135,7 @@ namespace cbsp
                 return isEmpty(m_buffer);
             }
 
-            const bool isItIn(const CBSP_BUFFER_IT &it, CBSP_BUFFER_LS &ls) noexcept
+            const bool isItIn(const CBSP_BUFFER_IT &it, CBSP_BUFFER_RB &ls) noexcept
             {
                 for (CBSP_BUFFER_IT _it = ls.begin(); _it != ls.end(); _it++)
                 {
@@ -156,8 +149,9 @@ namespace cbsp
 
             CBSP_BUFFER generateBuffer(const size_t &size) noexcept
             {
-                bool is_full = (buffer_busy.size() + buffer_free.size()) >= size_full;
-                if (is_full)
+                for (bool is_full = count() >= size_full;
+                     is_full && validCount() > 0;
+                     is_full = count() >= size_full)
                 {
                     auto it = getBufferFromFree(0);
                     if (!isEmpty(it))
@@ -170,80 +164,74 @@ namespace cbsp
                 return buffer;
             }
 
-            CBSP_BUFFER_PR setBufferToBusy(const CBSP_BUFFER_PR &it) noexcept
+            CBSP_BUFFER_IT setBufferToBusy(const CBSP_BUFFER_IT &it) noexcept
             {
-                return setBufferToBusy(prBuffer(it));
-            }
-
-            CBSP_BUFFER_PR setBufferToBusy(const CBSP_BUFFER &buffer) noexcept
-            {
-                buffer_busy.push_front(buffer);
-                return cvtIt2Pr(buffer_busy.begin());
-            }
-
-            void removeBufferFromBusy(CBSP_BUFFER_PR &it) noexcept
-            {
-                if (!isEmpty(it) && isItIn(prIterator(it), buffer_busy))
+                if (!isEmpty(it))
                 {
-                    buffer_busy.erase(prIterator(it));
+                    return setBufferToBusy(prBuffer(it));
                 }
-            }
-
-            CBSP_BUFFER_PR setBufferToFree(const CBSP_BUFFER_PR &it) noexcept
-            {
-                return setBufferToFree(prBuffer(it));
-            }
-
-            CBSP_BUFFER_PR setBufferToFree(const CBSP_BUFFER &buffer) noexcept
-            {
-                buffer_free.push_front(buffer);
-                return cvtIt2Pr(buffer_free.begin());
-            }
-
-            void removeBufferFromFree(const CBSP_BUFFER_PR &it) noexcept
-            {
-                if (!isEmpty(it) && isItIn(prIterator(it), buffer_free))
-                {
-                    buffer_free.erase(prIterator(it));
-                }
-            }
-
-            CBSP_BUFFER_PR getBufferFromFree(const size_t &size) noexcept
-            {
-                buffer_free.sort([](auto &a, auto &b)
-                                 { return a.size < b.size; });
-
-                CBSP_BUFFER_IT target = buffer_free.end();
-                for (CBSP_BUFFER_IT cand = buffer_free.begin(); cand != buffer_free.end(); cand++)
-                {
-                    if (cand->size >= size)
-                    {
-                        target = cand;
-                        break;
-                    }
-                }
-
-                if (target != buffer_free.end())
-                {
-                    return cvtIt2Pr(target);
-                }
-
                 return empty();
             }
 
-        private:
-            CBSP_BUFFER_PR m_buffer;
+            CBSP_BUFFER_IT setBufferToBusy(const CBSP_BUFFER &buffer) noexcept
+            {
+                return buffer_busy.emplace(std::make_pair(buffer.size, buffer));
+            }
+
+            void removeBufferFromBusy(CBSP_BUFFER_IT &it) noexcept
+            {
+                if (!isEmpty(it) && isItIn(it, buffer_busy))
+                {
+                    buffer_busy.erase(it);
+                }
+            }
+
+            CBSP_BUFFER_IT setBufferToFree(const CBSP_BUFFER_IT &it) noexcept
+            {
+                if (!isEmpty(it))
+                {
+                    return setBufferToFree(prBuffer(it));
+                }
+                return empty();
+            }
+
+            CBSP_BUFFER_IT setBufferToFree(const CBSP_BUFFER &buffer) noexcept
+            {
+                return buffer_free.emplace(std::make_pair(buffer.size, buffer));
+            }
+
+            void removeBufferFromFree(const CBSP_BUFFER_IT &it) noexcept
+            {
+                if (!isEmpty(it) && isItIn(it, buffer_free))
+                {
+                    buffer_free.erase(it);
+                }
+            }
+
+            CBSP_BUFFER_IT getBufferFromFree(const size_t &size) noexcept
+            {
+                CBSP_BUFFER_IT target = buffer_free.lower_bound(size);
+
+                if (target != buffer_free.end())
+                {
+                    return target;
+                }
+
+                return buffer_free.end();
+            }
 
         private:
-            static const size_t size_full = 10;
-            static CBSP_BUFFER_LS buffer_free;
-            static CBSP_BUFFER_LS buffer_busy;
-            static CBSP_BUFFER_LS buffer_empty;
+            CBSP_BUFFER_IT m_buffer;
+
+        private:
+            static size_t size_full;
+            static CBSP_BUFFER_RB buffer_free;
+            static CBSP_BUFFER_RB buffer_busy;
         };
 
-        CBSP_BUFFER_LS Buffer::buffer_free;
-        CBSP_BUFFER_LS Buffer::buffer_busy;
-        CBSP_BUFFER_LS Buffer::buffer_empty{{nullptr, 0}};
+        size_t Buffer::size_full = 10;
+        CBSP_BUFFER_RB Buffer::buffer_free;
+        CBSP_BUFFER_RB Buffer::buffer_busy;
     }
 }
 

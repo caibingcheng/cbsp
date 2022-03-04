@@ -101,3 +101,39 @@ TEST(BufferTest, MEMSET)
 
     ASSERT_EQ(cbsp::Buffer::count(), 10);
 }
+
+TEST(BufferTest, CAPACITY)
+{
+    cbsp::Buffer::clear();
+
+    for (int i = 0; i < 100; i++)
+    {
+        // init buffers
+        cbsp::Buffer(1024 * i + 1);
+    }
+    ASSERT_EQ(cbsp::Buffer::validCount(), 10);
+    ASSERT_EQ(cbsp::Buffer::inValidCount(), 0);
+    ASSERT_EQ(cbsp::Buffer::count(), 10);
+
+    // delay capacity
+    cbsp::Buffer::capacity(5);
+    for (int i = 0; i < 100; i++)
+    {
+        // init buffers
+        cbsp::Buffer(1024 * i + 1);
+    }
+    ASSERT_EQ(cbsp::Buffer::validCount(), 10);
+    ASSERT_EQ(cbsp::Buffer::inValidCount(), 0);
+    ASSERT_EQ(cbsp::Buffer::count(), 10);
+
+    for (int i = 0; i < 100; i++)
+    {
+        // init buffers
+        size_t size = 1024 * 100 * i + 1;
+        cbsp::Buffer buffer = cbsp::Buffer(size);
+        ASSERT_GE(buffer.size(), size);
+    }
+    ASSERT_EQ(cbsp::Buffer::validCount(), 5);
+    ASSERT_EQ(cbsp::Buffer::inValidCount(), 0);
+    ASSERT_EQ(cbsp::Buffer::count(), 5);
+}
