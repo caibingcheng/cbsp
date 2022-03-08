@@ -61,54 +61,42 @@ namespace cbsp
 
     inline int write(const void *data, size_t size, size_t n, FILE *fp)
     {
-        auto ok = std::fwrite(data, size, n, fp);
-        // #ifdef _WIN32_WINNT
-        //         int fd = _fileno(fp);
-        //         _commit(fd);
-        // #else
-        //         int fd = ::fileno(fp);
-        //         ::fsync(fd);
-        // #endif
-
-        return ok;
+        auto length = std::fwrite(data, size, n, fp);
+        return length;
     }
 
     template <typename T>
-    inline int write(std::FILE *&fp, T &data, uint64_t offset, uint32_t size)
+    inline int write(std::FILE *&fp, const T &data, uint64_t offset, uint32_t size)
     {
         uint64_t _offset = std::ftell(fp);
         std::fseek(fp, offset, SEEK_SET);
-        auto ok = write(reinterpret_cast<char *>(&data), sizeof(char), size, fp);
+        auto length = write(reinterpret_cast<const char *>(&data), sizeof(char), size, fp);
         std::fseek(fp, _offset, SEEK_SET);
 
-        return ok;
+        return length;
     }
 
     template <typename T>
-    inline int write(std::FILE *&fp, T *data, uint64_t offset, uint32_t size)
+    inline int write(std::FILE *&fp, const T *data, uint64_t offset, uint32_t size)
     {
         uint64_t _offset = std::ftell(fp);
         std::fseek(fp, offset, SEEK_SET);
-        auto ok = write(reinterpret_cast<char *>(data), sizeof(char), size, fp);
+        auto length = write(reinterpret_cast<const char *>(data), sizeof(char), size, fp);
         std::fseek(fp, _offset, SEEK_SET);
 
-        return ok;
+        return length;
     }
 
     template <typename T>
-    inline int write(std::FILE *&fp, T &data, uint32_t size)
+    inline int write(std::FILE *&fp, const T &data, uint32_t size)
     {
-        auto ok = write(reinterpret_cast<char *>(data), sizeof(char), size, fp);
-
-        return ok;
+        return write(reinterpret_cast<const char *>(data), sizeof(char), size, fp);
     }
 
     template <typename T>
-    inline int write(std::FILE *&fp, T *data, uint32_t size)
+    inline int write(std::FILE *&fp, const T *data, uint32_t size)
     {
-        auto ok = write(reinterpret_cast<char *>(data), sizeof(char), size, fp);
-
-        return ok;
+        return write(reinterpret_cast<const char *>(data), sizeof(char), size, fp);
     }
 
     inline bool isCBSP(const CBSP_HEADER &header)

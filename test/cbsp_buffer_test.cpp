@@ -130,7 +130,7 @@ TEST(BufferTest, CAPACITY)
     {
         // init buffers
         size_t size = 1024 * 100 * i + 1;
-        cbsp::Buffer buffer = cbsp::Buffer(size);
+        cbsp::Buffer buffer(size);
         ASSERT_GE(buffer.size(), size);
     }
     ASSERT_EQ(cbsp::Buffer::validCount(), 5);

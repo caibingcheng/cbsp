@@ -22,7 +22,8 @@ namespace cbsp
         Chunk(const uint64_t &size) : m_size(0), m_data(size), m_rsize(size) {}
         virtual ~Chunk() = default;
 
-        virtual char *data() const noexcept { return m_data.get(); }
+        virtual char *get() const noexcept { return m_data.get(); }
+        virtual const char *data() const noexcept { return m_data.data(); }
         virtual uint64_t size() const noexcept { return m_size; }
         virtual bool empty() const noexcept { return m_data.get() == nullptr || m_size == 0; }
 
@@ -35,8 +36,9 @@ namespace cbsp
     class ChunkFile : public Chunk
     {
     public:
-        ChunkFile() = default;
-        ChunkFile(const ChunkFile &other) { *this = other; }
+        explicit ChunkFile() = delete;
+        explicit ChunkFile(const ChunkFile &) = delete;
+        explicit ChunkFile(ChunkFile &&) = delete;
         ChunkFile(std::FILE *&file) : m_file(file),                // file pointer
                                       Chunk(flength(file)),        // memory allocated
                                       m_storage(std::ftell(file)), // current position
@@ -78,32 +80,22 @@ namespace cbsp
             reset();
         };
 
-        ChunkFile &operator=(const ChunkFile &other)
-        {
-            std::memcpy(this, &other, sizeof(ChunkFile));
-        }
+        void operator=(const ChunkFile &) = delete;
+        void operator=(ChunkFile &&) = delete;
+
         bool operator==(const ChunkFile &other) const noexcept
         {
             return std::tie(m_file, m_offset, m_length) == std::tie(other.m_file, other.m_offset, other.m_length);
         }
+
         bool operator!=(const ChunkFile &other) const noexcept
         {
             return m_file != other.m_file ||
                    m_offset != other.m_offset ||
                    m_length != other.m_length;
         }
-        ChunkFile &operator++() noexcept
-        {
-            next();
-            return *this;
-        }
-        // TODO: should no copy
-        ChunkFile &operator++(int) noexcept
-        {
-            next();
-            return *this;
-        }
-        ChunkFile &operator*() noexcept
+
+        ChunkFile &get() noexcept
         {
             uint64_t pos = fpos();
 
@@ -133,25 +125,17 @@ namespace cbsp
         {
             std::fseek(m_file, m_storage, SEEK_SET);
         }
-        ChunkFile &begin() noexcept
+
+        const bool eof() const noexcept
         {
-            std::fseek(m_file, m_offset, SEEK_SET);
-            return *this;
+            return m_offset >= m_length;
         }
-        ChunkFile &next() noexcept
+
+        const void next() noexcept
         {
             m_offset += m_bsize;
             m_offset = (m_offset >= m_length) ? m_length : m_offset;
             std::fseek(m_file, m_offset, SEEK_SET);
-            return *this;
-        }
-        const ChunkFile &end() const noexcept
-        {
-            static ChunkFile chunkfile;
-            chunkfile = *this;
-            chunkfile.m_offset = m_length;
-
-            return chunkfile;
         }
 
         const uint64_t batch() const { return m_bsize; }

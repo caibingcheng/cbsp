@@ -54,10 +54,11 @@ namespace cbsp
 
         {
             ChunkFile chunkfile(fp, batch_size, blocker.offset, blocker.length);
-            for (auto it = chunkfile.begin(); it != chunkfile.end(); it++)
+            while(!chunkfile.eof())
             {
-                auto chunk = *it;
+                ChunkFile &chunk = chunkfile.get();
                 crc = crc32(chunk.data(), chunk.size(), crc);
+                chunkfile.next();
             }
         }
 

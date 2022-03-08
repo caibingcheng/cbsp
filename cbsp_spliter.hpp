@@ -48,10 +48,11 @@ namespace cbsp
             }
 
             ChunkFile chunkfile(fp, batch_size, blocker.offset, blocker.length);
-            for (auto it = chunkfile.begin(); it != chunkfile.end(); it++)
+            while(!chunkfile.eof())
             {
-                auto &chunk = *it;
+                ChunkFile &chunk = chunkfile.get();
                 write(file, chunk.data(), chunk.size());
+                chunkfile.next();
             }
 
             std::fclose(file);
@@ -65,10 +66,11 @@ namespace cbsp
             }
             crc = 0x0;
             ChunkFile chunkTest(file, batch_size);
-            for (auto it = chunkTest.begin(); it != chunkTest.end(); it++)
+            while(!chunkTest.eof())
             {
-                auto &chunk = *it;
+                ChunkFile &chunk = chunkTest.get();
                 crc = crc32(chunk.data(), chunk.size(), crc);
+                chunkTest.next();
             }
             std::fclose(file);
 

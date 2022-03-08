@@ -26,9 +26,9 @@ function full_test() {
     TEST_DIR_IN=.test_in
     TEST_DIR_OUT=.test_out
 
-    rm -fr .cb
     rm -fr $TEST_DIR_IN
     rm -fr $TEST_DIR_OUT
+    rm -fr .cb
 
     mkdir -p $TEST_DIR_IN
     mkdir -p $TEST_DIR_OUT
@@ -60,7 +60,7 @@ function full_test() {
     }
 
     function generate_randfile() {
-        for i in {1..1000}; do
+        for i in {1..100}; do
             generate_randpath $TEST_DIR_IN
             rand_text=$(generate_randcontent)
             echo $rand_text >>$RAND_PATH
@@ -75,20 +75,20 @@ function full_test() {
     echo "./cbsp -c .cb $TEST_DIR_IN"
     time ./cbsp -c .cb $TEST_DIR_IN
 
-    echo -e "\n\n\n"
-    echo "./cbsp -s .cb $TEST_DIR_OUT"
-    time ./cbsp -s .cb $TEST_DIR_OUT
+    # echo -e "\n\n\n"
+    # echo "./cbsp -s .cb $TEST_DIR_OUT"
+    # time ./cbsp -s .cb $TEST_DIR_OUT
 
-    DIFF=$(diff -qr $TEST_DIR_IN $TEST_DIR_OUT)
-    if [[ $DIFF != "" ]]; then
-        echo $DIFF
-        echo "!!!!!!!!!!!!!!!!!!!FAILED!!!!!!!!!!!!!!!!!!!"
-    else
-        rm -fr $TEST_DIR_IN
-        rm -fr $TEST_DIR_OUT
-        rm -fr .cb
-        echo "!!!!!!!!!!!!!!!!!!!SUCCESS!!!!!!!!!!!!!!!!!!!"
-    fi
+    # DIFF=$(diff -qr $TEST_DIR_IN $TEST_DIR_OUT)
+    # if [[ $DIFF != "" ]]; then
+    #     echo $DIFF
+    #     echo "!!!!!!!!!!!!!!!!!!!FAILED!!!!!!!!!!!!!!!!!!!"
+    # else
+    #     rm -fr $TEST_DIR_IN
+    #     rm -fr $TEST_DIR_OUT
+    #     rm -fr .cb
+    #     echo "!!!!!!!!!!!!!!!!!!!SUCCESS!!!!!!!!!!!!!!!!!!!"
+    # fi
 }
 
 if [[ "$1" == "unittest" ]]; then

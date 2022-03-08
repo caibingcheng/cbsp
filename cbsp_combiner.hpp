@@ -5,12 +5,15 @@
 #include <memory>
 #include <string>
 
+#include <thread>
+#include <mutex>
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
 #include <sys/param.h>
 
 #include "cbsp_structor.hpp"
+#include "cbsp_thread.hpp"
 #include "cbsp_error.hpp"
 #include "cbsp_file.hpp"
 #include "cbsp_utils.hpp"
@@ -45,6 +48,140 @@ namespace cbsp
             return false;
         }
 
+        static std::mutex g_wrtex;
+        inline void asyncAdd(std::FILE *fp, std::string path)
+        {
+            const char *filepath = path.c_str();
+            // check if the source file already exists
+            std::FILE *file = std::fopen(filepath, "rb");
+            if (!file)
+            {
+                throw std::runtime_error(std::string("no such file") + filepath);
+            }
+
+            // check if the file already exists in cbsp
+            std::unique_lock<std::mutex> lock(g_wrtex);
+            lock.unlock();
+
+            lock.lock();
+            bool exists = alreadyExist(fp, filepath);
+            lock.unlock();
+
+            if (exists)
+            {
+                std::fclose(file);
+                ErrorMessage::setMessage("%s already exists", filepath);
+            }
+
+            std::string filename = fileName(filepath);
+            std::string filedir = fileDir(filepath);
+
+            lock.lock();
+            bool is_match = crcMatch(fp);
+            lock.unlock();
+
+            if (!is_match)
+            {
+                std::fclose(file);
+                throw std::runtime_error(std::string("crc not matched"));
+            }
+
+            // get the source file length
+            uint64_t length = fileLenght(file);
+            static const uint64_t large_length = batch_size;
+            static const uint64_t info_length = 1024 * 1024 * 1;
+
+            if (length < large_length)
+            {
+                Buffer buffer(length + info_length);
+
+                // cp source to target
+                uint32_t crc = 0x0;
+                {
+                    ChunkFile chunkfile(file, batch_size);
+                    while(!chunkfile.eof())
+                    {
+                        ChunkFile &chunk = chunkfile.get();
+                        cbsp_assert(!chunk.empty());
+                        if (chunk.empty())
+                        {
+                            std::fclose(file);
+                            throw std::runtime_error(std::string("bad chunk"));
+                        }
+                        cbsp_assert(buffer.write(chunk.data(), chunk.size()) == chunk.size());
+                        crc = crc32(chunk.data(), chunk.size(), crc);
+                        chunkfile.next();
+                    }
+                }
+
+                uint64_t fnameLength = strlen(filename.c_str());
+                uint64_t fdirLength = strlen(filedir.c_str());
+                buffer.write(const_cast<char *>(filename.c_str()), fnameLength);
+                buffer.write(const_cast<char *>(filedir.c_str()), fdirLength);
+
+                CBSP_BLOCKER blocker;
+                blocker.magic = CBSP_MAGIC;
+                blocker.size = sizeof(CBSP_BLOCKER);
+                blocker.crc = crc;
+                blocker.length = length;
+                blocker.fnameLength = fnameLength;
+                blocker.fdirLength = fdirLength;
+                blocker.pathDigest = crc32(filepath, strlen(filepath));
+
+                lock.lock();
+                // seek to the end of the cbsp file
+                // trying to write
+                std::fseek(fp, 0, SEEK_END);
+
+                // get the FILE offset
+                // content offset
+                uint64_t offset = std::ftell(fp);
+
+                // fname offset
+                uint64_t fnameOffset = offset + length;
+
+                // fdirname offset
+                uint64_t fdirOffset = fnameOffset + fnameLength;
+
+                // struct offset
+                uint64_t stOffset = fdirOffset + fdirLength;
+
+                blocker.offset = offset;
+                blocker.fnameOffset = fnameOffset;
+                blocker.fdirOffset = fdirOffset;
+                buffer.write(reinterpret_cast<char *>(&blocker), blocker.size);
+
+                cbsp_assert(write(fp, const_cast<char *>(buffer.data()), buffer.length()) == buffer.length());
+
+                // after write done
+                auto header = getHeader(fp);
+                if (hasLast(header))
+                {
+                    auto last = getLast(fp, header);
+                    last.next = stOffset;
+                    setLast(fp, header, last);
+                }
+                else
+                {
+                    header.size = sizeof(CBSP_HEADER);
+                    header.first = stOffset;
+                }
+
+                // header crc = all blocker header
+                header.count++;
+                header.last = stOffset;
+                header.crc = crcBlocker(fp, header);
+                // if write header failed, the process failed
+                if (setHeader(fp, header) < static_cast<int>(header.size))
+                {
+                    throw std::runtime_error(std::string("bad header"));
+                }
+
+                lock.unlock();
+            }
+            std::fclose(file);
+        }
+
         int add(std::FILE *&fp, const char *opath)
         {
             if (!opath)
@@ -70,146 +207,9 @@ namespace cbsp
                 return CBSP_ERR_DEN_ACCESS;
             }
 
-            // check if the source file already exists
-            std::FILE *file = std::fopen(filepath, "rb");
-            if (!file)
-            {
-                return CBSP_ERR_NO_SOURCE;
-            }
-
-            // check if the file already exists in cbsp
-            if (alreadyExist(fp, filepath))
-            {
-                std::fclose(file);
-                ErrorMessage::setMessage("%s already exists", opath);
-                return CBSP_ERR_AL_EXIST;
-            }
-
-            std::string filename = fileName(filepath);
-            std::string filedir = fileDir(filepath);
-
-            // seek to the end of the cbsp file
-            // trying to write
-            std::fseek(fp, 0, SEEK_END);
-
-            // get the FILE offset
-            // content offset
-            uint64_t offset = std::ftell(fp);
-
-            // if the target offset is zero(empty file)
-            // reset it to a cbsp file
-            // else check if it's a cbsp file
-            if (0 == offset)
-            {
-                CBSP_HEADER header;
-                // set the header size
-                // the size is set only at initialization
-                header.size = sizeof(CBSP_HEADER);
-                // default crc
-                // the default crc is only set here
-                header.crc = 0x0;
-                // set the magic number and write header to target
-                // if write header failed, the process failed
-                if (setHeader(fp, header) < static_cast<int>(header.size))
-                {
-                    return CBSP_ERR_CREATE_FAILED;
-                }
-                // move to the end fp target
-                std::fseek(fp, 0, SEEK_END);
-                offset = std::ftell(fp);
-            }
-            // if not a empty file
-            // check if it's a cbsp file
-            else if (!isCBSP(fp))
-            {
-                std::fclose(file);
-                return CBSP_ERR_NO_CBSP;
-            }
-
-            if (!crcMatch(fp))
-            {
-                std::fclose(file);
-                return CBSP_ERR_BAD_CBSP;
-            }
-
-            // get the source file length
-            uint64_t length = fileLenght(file);
-
-            // struct offset
-            uint64_t stOffset = offset + length;
-
-            // fname offset
-            uint64_t fnameOffset = stOffset + sizeof(CBSP_BLOCKER);
-            uint64_t fnameLength = strlen(filename.c_str());
-
-            // fdirname offset
-            uint64_t fdirOffset = fnameOffset + fnameLength;
-            uint64_t fdirLength = strlen(filedir.c_str());
-
-            // the total length fp the blocker
-            // uint64_t reserve = length + sizeof(CBSP_BLOCKER) + fnameLength + fdirLength;
-
-            CBSP_BLOCKER blocker;
-            blocker.magic = CBSP_MAGIC;
-            blocker.size = sizeof(CBSP_BLOCKER);
-            blocker.offset = offset;
-            blocker.length = length;
-            blocker.fnameOffset = fnameOffset;
-            blocker.fnameLength = fnameLength;
-            blocker.fdirOffset = fdirOffset;
-            blocker.fdirLength = fdirLength;
-            blocker.pathDigest = crc32(filepath, strlen(filepath));
-
-            // cp source to target
-            uint32_t crc = 0x0;
-            std::fseek(fp, offset, SEEK_SET);
-            {
-                ChunkFile chunkfile(file, batch_size);
-
-                for (auto it = chunkfile.begin(); it != chunkfile.end(); it++)
-                {
-                    auto &chunk = *it;
-                    cbsp_assert(!chunk.empty());
-                    if (chunk.empty())
-                    {
-                        std::fclose(file);
-                        return CBSP_ERR_NO_SOURCE;
-                    }
-                    write(fp, chunk.data(), chunk.size());
-                    crc = crc32(chunk.data(), chunk.size(), crc);
-                }
-            }
-            std::fclose(file);
-
-            // set blocker header
-            blocker.crc = crc;
-            write(fp, blocker, stOffset, sizeof(CBSP_BLOCKER));
-            write(fp, const_cast<char *>(filename.c_str()), fnameOffset, fnameLength);
-            write(fp, const_cast<char *>(filedir.c_str()), fdirOffset, fdirLength);
-
-            // after write done
-            auto header = getHeader(fp);
-            if (hasLast(header))
-            {
-                auto last = getLast(fp, header);
-                last.next = stOffset;
-                setLast(fp, header, last);
-            }
-            else
-            {
-                header.size = sizeof(CBSP_HEADER);
-                header.first = stOffset;
-            }
-
-            // header crc = all blocker header
-            header.count++;
-            header.last = stOffset;
-            header.crc = crcBlocker(fp, header);
-            // if write header failed, the process failed
-            if (setHeader(fp, header) < static_cast<int>(header.size))
-            {
-                return CBSP_ERR_CREATE_FAILED;
-            }
+            ThreadPool::create(32);
+            ThreadPool::enqueue(asyncAdd, fp, filepath);
+            // asyncAdd(fp, filepath);
 
             return CBSP_ERR_SUCCESS;
         }

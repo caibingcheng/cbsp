@@ -5,6 +5,7 @@
 
 #include "cbsp_combiner.hpp"
 #include "cbsp_spliter.hpp"
+#include "cbsp_thread.hpp"
 #include "cbsp_error.hpp"
 #include "cbsp_file.hpp"
 #include "cbsp_tree.hpp"
@@ -54,6 +55,8 @@ namespace cbsp
                 ret |= add(source);
             }
         }
+        ThreadPool::wait();
+        fprintf(stderr, "????\n");
         return ret;
     }
     inline int split(const char *target, const char *outdir = nullptr)
